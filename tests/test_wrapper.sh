@@ -38,6 +38,24 @@ test "$(sed -n '1p' "$trace")" = core-ok
 test "$(sed -n '2p' "$trace")" = document.pdf
 test "$(wc -l <"$trace")" -eq 2
 
+: >"$trace"
+set +e
+"$wrapper"
+status=$?
+set -e
+test "$status" -eq 7
+test "$(sed -n '1p' "$trace")" = evince
+test -z "$(sed -n '2p' "$trace")"
+test "$(wc -l <"$trace")" -eq 2
+
+: >"$trace"
+set +e
+"$wrapper" --no-fallback 2>/dev/null
+status=$?
+set -e
+test "$status" -eq 64
+test ! -s "$trace"
+
 make_program "$core" 65 core-data-error
 : >"$trace"
 set +e
@@ -78,4 +96,4 @@ test "$status" -eq 7
 test "$(sed -n '1p' "$trace")" = evince
 test "$(sed -n '2p' "$trace")" = missing-core.pdf
 
-printf '%s\n' '5 wrapper tests passed'
+printf '%s\n' '7 wrapper tests passed'

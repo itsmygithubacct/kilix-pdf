@@ -8,7 +8,8 @@ the whole viewport again.
 The executable name is `kilix-pdf-viewer`; `kilix-pdf` remains the separate
 PDF-to-Markdown converter. The launcher tries the native terminal viewer first
 and opens the same file in Evince if native dependencies, terminal graphics,
-or encrypted-document UI are unavailable.
+or encrypted-document UI are unavailable. Launching without a path opens
+Evince's file chooser.
 
 ## Build and test
 

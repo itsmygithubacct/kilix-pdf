@@ -21,7 +21,12 @@ if [ -z "$core" ]; then
 fi
 
 status=69
-if [ -n "$core" ] && [ -x "$core" ]; then
+if [ "$#" -eq 0 ] && [ "$fallback" -eq 0 ]; then
+    printf '%s\n' 'kilix-pdf-viewer: a PDF path is required' >&2
+    exit 64
+elif [ "$#" -eq 0 ]; then
+    status=69
+elif [ -n "$core" ] && [ -x "$core" ]; then
     "$core" "$@"
     status=$?
     if [ "$status" -ne 69 ] || [ "$fallback" -eq 0 ]; then

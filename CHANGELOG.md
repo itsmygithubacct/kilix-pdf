@@ -10,3 +10,5 @@
   `kilix-pdf-viewer` executable name.
 - Fall back to Evince when the native viewer or its interactive encrypted-PDF
   flow is unavailable.
+- Open Evince's graphical file chooser for launcher invocations that do not
+  provide a PDF path.
