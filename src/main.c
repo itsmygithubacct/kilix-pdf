@@ -418,19 +418,19 @@ static bool present_full(pdf_viewer *viewer)
 
 static bool present_scroll(pdf_viewer *viewer, int scroll_delta)
 {
-    kittyfb_rect fixed;
-    int terminal_dy = -scroll_delta;
-    int fixed_height = viewer->layout.toolbar_height;
+    const int terminal_dy = -scroll_delta;
+    const kittyfb_rect viewport = {
+        0,
+        viewer->layout.toolbar_height,
+        viewer->layout.frame_width,
+        viewer->layout.frame_height
+    };
 
-    if (terminal_dy > 0) fixed_height += terminal_dy;
-    if (fixed_height > viewer->layout.frame_height)
-        fixed_height = viewer->layout.frame_height;
-    fixed = (kittyfb_rect){0, 0, viewer->layout.frame_width, fixed_height};
     return compose_frame(viewer) &&
-           kittyts_present_scroll(
+           kittyts_present_scroll_region(
                &viewer->terminal, viewer->frame_rgba,
                viewer->layout.frame_width, viewer->layout.frame_height,
-               0, terminal_dy, &fixed, 1u);
+               &viewport, 0, terminal_dy, NULL, 0u);
 }
 
 static int scroll_step(const pdf_viewer *viewer)

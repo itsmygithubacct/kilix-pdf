@@ -20,6 +20,30 @@ PDF = ROOT / "tests/minimal.pdf"
 SYNC_END = b"\x1b[?2026l"
 
 
+def graphics_controls(data: bytes) -> list[bytes]:
+    controls: list[bytes] = []
+    offset = 0
+    while True:
+        start = data.find(b"\x1b_G", offset)
+        if start < 0:
+            return controls
+        separator = data.find(b";", start + 3)
+        terminator = data.find(b"\x1b\\", separator + 1)
+        if separator < 0 or terminator < 0:
+            return controls
+        controls.append(data[start + 3 : separator])
+        offset = terminator + 2
+
+
+def control_parameters(control: bytes) -> dict[bytes, bytes]:
+    parameters: dict[bytes, bytes] = {}
+    for field in control.split(b","):
+        key, separator, value = field.partition(b"=")
+        if separator:
+            parameters[key] = value
+    return parameters
+
+
 def read_until(master: int, process: subprocess.Popen[bytes], predicate) -> bytes:
     deadline = time.monotonic() + 8.0
     captured = bytearray()
@@ -71,6 +95,13 @@ def run_viewer(kilix_rendering: bool) -> None:
         initial = read_until(master, process, lambda data: SYNC_END in data)
         if b"a=T" not in initial:
             raise AssertionError("initial frame was not transmitted")
+        transmit = next(
+            control
+            for control in graphics_controls(initial)
+            if control.startswith(b"a=T,")
+        )
+        if int(control_parameters(transmit).get(b"z", b"0")) >= -1073741824:
+            raise AssertionError("framebuffer image obscures terminal pointer layer")
 
         os.write(master, b"w")
         fitted = read_until(master, process, lambda data: SYNC_END in data)
@@ -89,6 +120,63 @@ def run_viewer(kilix_rendering: bool) -> None:
             )
             if b"C=1,N=2,q=2" not in scrolled or b"a=f" not in scrolled:
                 raise AssertionError("scroll did not compose and patch atomically")
+            controls = graphics_controls(scrolled)
+            compose = next(
+                (control for control in controls if control.startswith(b"a=c,")),
+                None,
+            )
+            if compose is None:
+                raise AssertionError("scroll compose control was not captured")
+            compose_parameters = control_parameters(compose)
+            destination_y = int(compose_parameters[b"y"])
+            source_y = int(compose_parameters[b"Y"])
+            if destination_y <= 0 or source_y <= destination_y:
+                raise AssertionError("scroll was not clipped below fixed chrome")
+            first_chunks = [
+                control
+                for control in controls
+                if control.startswith(b"a=f,") and b"r=1" in control
+            ]
+            if not first_chunks:
+                raise AssertionError("scroll did not patch its exposed strip")
+            if any(int(control_parameters(control)[b"y"]) < destination_y
+                   for control in first_chunks):
+                raise AssertionError("scroll patch crossed into fixed chrome")
+            continuations = [
+                control
+                for control in controls
+                if control.startswith(b"a=f,q=") and b"m=" in control
+            ]
+            if any(b",i=" in control for control in continuations):
+                raise AssertionError("animation-frame continuation repeated image id")
+
+            os.write(master, b"k")
+            reverse = read_until(
+                master,
+                process,
+                lambda data: b"a=c" in data and b"a=f" in data and SYNC_END in data,
+            )
+            reverse_controls = graphics_controls(reverse)
+            reverse_compose = next(
+                control
+                for control in reverse_controls
+                if control.startswith(b"a=c,")
+            )
+            reverse_parameters = control_parameters(reverse_compose)
+            reverse_source_y = int(reverse_parameters[b"Y"])
+            reverse_destination_y = int(reverse_parameters[b"y"])
+            if reverse_source_y <= 0 or reverse_destination_y <= reverse_source_y:
+                raise AssertionError("reverse scroll was not clipped below fixed chrome")
+            reverse_patches = [
+                control
+                for control in reverse_controls
+                if control.startswith(b"a=f,") and b"r=1" in control
+            ]
+            if not reverse_patches or any(
+                int(control_parameters(control)[b"y"]) < reverse_source_y
+                for control in reverse_patches
+            ):
+                raise AssertionError("reverse scroll patch crossed into fixed chrome")
         else:
             scrolled = read_until(master, process, lambda data: SYNC_END in data)
             if b"a=T" not in scrolled or b"a=c" in scrolled:

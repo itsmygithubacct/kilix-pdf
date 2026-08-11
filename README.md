@@ -48,10 +48,12 @@ build/kilix-pdf-core --benchmark document.pdf
 
 Poppler interprets PDF content and Cairo rasterizes the current page on the
 CPU. Scrolling reuses that page surface. Kilix Kitty can compose the retained
-viewport overlap on a hardware GPU; when no usable GPU exists, the terminal's
-validated CPU upload path produces the same result. On an unmodified
-Kitty-compatible terminal, the framebuffer library automatically sends a full
-frame instead of the Kilix extension.
+content viewport overlap on a hardware GPU while leaving the toolbar fixed;
+when no usable GPU exists, the terminal's validated CPU upload path produces
+the same result. On an unmodified Kitty-compatible terminal, the framebuffer
+library automatically sends a full frame instead of the Kilix extension.
+Framebuffer images are layered below terminal foreground UI so Kilix's
+software mouse pointer remains visible over the document.
 
 The launcher treats exit status 69 as “native viewer unavailable” and then
 executes `/usr/bin/evince`. Other errors are preserved so a corrupt path or PDF
