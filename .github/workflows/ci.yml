@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Install native dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes \
+            build-essential libcairo2-dev libglib2.0-dev \
+            libpoppler-glib-dev pkg-config zlib1g-dev
+      - name: Test
+        run: |
+          make test
+          make test-native
+          make sanitize

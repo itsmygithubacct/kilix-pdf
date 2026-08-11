@@ -1,0 +1,45 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-3.0-or-later
+set -u
+
+fallback=1
+if [ "${1-}" = "--no-fallback" ]; then
+    fallback=0
+    shift
+fi
+
+script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
+core=${KILIX_PDF_VIEWER_CORE-}
+if [ -z "$core" ]; then
+    if [ -x "$script_dir/build/kilix-pdf-core" ]; then
+        core=$script_dir/build/kilix-pdf-core
+    elif [ -x "$script_dir/kilix-pdf-core" ]; then
+        core=$script_dir/kilix-pdf-core
+    elif command -v kilix-pdf-core >/dev/null 2>&1; then
+        core=$(command -v kilix-pdf-core)
+    fi
+fi
+
+status=69
+if [ -n "$core" ] && [ -x "$core" ]; then
+    "$core" "$@"
+    status=$?
+    if [ "$status" -ne 69 ] || [ "$fallback" -eq 0 ]; then
+        exit "$status"
+    fi
+elif [ "$fallback" -eq 0 ]; then
+    printf '%s\n' 'kilix-pdf-viewer: native viewer is unavailable' >&2
+    exit "$status"
+fi
+
+evince=${KILIX_PDF_VIEWER_EVINCE-/usr/bin/evince}
+if [ ! -x "$evince" ]; then
+    if command -v evince >/dev/null 2>&1; then
+        evince=$(command -v evince)
+    else
+        printf '%s\n' \
+            'kilix-pdf-viewer: neither the native viewer nor Evince is available' >&2
+        exit 69
+    fi
+fi
+exec "$evince" "$@"

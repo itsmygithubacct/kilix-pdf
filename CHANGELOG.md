@@ -1,0 +1,12 @@
+# Changelog
+
+## 0.1.0
+
+- Add a Poppler/Cairo terminal-native PDF viewer with page caching, navigation,
+  zoom, mouse-wheel input, resize handling, and headless PNG validation.
+- Use retained-scroll terminal composition for small vertical moves, with
+  automatic full-frame and CPU fallbacks.
+- Keep the existing PDF conversion command distinct through the
+  `kilix-pdf-viewer` executable name.
+- Fall back to Evince when the native viewer or its interactive encrypted-PDF
+  flow is unavailable.
