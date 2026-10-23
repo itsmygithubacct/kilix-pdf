@@ -18,6 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CORE = Path(os.environ.get("KILIX_PDF_CORE", ROOT / "build/kilix-pdf-core"))
 PDF = ROOT / "tests/minimal.pdf"
 SYNC_END = b"\x1b[?2026l"
+READY = b"\x1b]1337;SetUserVar=kilix_pdf_ready=djE=\x07"
 
 
 def graphics_controls(data: bytes) -> list[bytes]:
@@ -81,6 +82,7 @@ def run_viewer(kilix_rendering: bool) -> None:
         else:
             environment.pop("KITTY_KILIX_RENDERING", None)
         environment["KILIX_PDF_TEST_TERMINAL"] = "1"
+        environment["KILIX_PDF_READINESS"] = "1"
         process = subprocess.Popen(
             [str(CORE), str(PDF)],
             stdin=slave,
@@ -92,7 +94,9 @@ def run_viewer(kilix_rendering: bool) -> None:
         os.close(slave)
         slave = -1
 
-        initial = read_until(master, process, lambda data: SYNC_END in data)
+        initial = read_until(master, process, lambda data: READY in data)
+        if initial.index(READY) < initial.index(SYNC_END):
+            raise AssertionError("readiness preceded the completed first frame")
         if b"a=T" not in initial:
             raise AssertionError("initial frame was not transmitted")
         transmit = next(
@@ -202,6 +206,11 @@ def run_viewer(kilix_rendering: bool) -> None:
 def main() -> int:
     run_viewer(kilix_rendering=True)
     run_viewer(kilix_rendering=False)
+    failed = subprocess.run([str(CORE), str(ROOT / 'tests/absent.pdf')],
+                            capture_output=True, timeout=5,
+                            env=dict(os.environ, KILIX_PDF_READINESS='1'))
+    if failed.returncode == 0 or READY in failed.stdout:
+        raise AssertionError('a document-open failure announced readiness')
     print("retained-scroll and standard-terminal fallback protocols passed")
     return 0
 
