@@ -634,6 +634,27 @@ static int run_interactive(const char *path)
         return EX_SOFTWARE;
     }
 
+    /* Opt-in launch observation: emit only after the first frame was sent.
+     * No document-supplied text enters the observation. The caller must
+     * still correlate the exact pane, process and requested document. */
+    if (getenv("KILIX_PDF_READINESS") != NULL) {
+        kittyfb_stats stats = {0};
+        /* present_full queues asynchronous encoding. Wait for its completed
+         * terminal write, not just acceptance into the presenter's queue. */
+        for (int attempt = 0; attempt < 500 && !stop_requested; attempt++) {
+            kittyfb_get_stats(&viewer.terminal.framebuffer, &stats);
+            if (stats.frames_encoded > 0u || stats.encode_failures > 0u) break;
+            (void)poll(NULL, 0u, 10);
+        }
+        if (stats.frames_encoded == 0u || stats.encode_failures > 0u ||
+            stop_requested ||
+            fputs("\033]1337;SetUserVar=kilix_pdf_ready=djE=\007", stdout) == EOF ||
+            fflush(stdout) != 0) {
+            viewer_cleanup(&viewer);
+            return EX_IOERR;
+        }
+    }
+
     while (running && !stop_requested) {
         struct pollfd descriptor = {STDIN_FILENO, POLLIN, 0};
         const int old_scroll = viewer.layout.scroll_y;
