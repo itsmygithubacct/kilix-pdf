@@ -17,6 +17,8 @@ and opens the same file in Evince if native dependencies, terminal graphics,
 or encrypted-document UI are unavailable. Launching without a path opens
 Evince's file chooser.
 
+![`kilix pdf-view` showing a one-page test document in a pane](docs/images/viewer.png)
+
 ## What it does
 
 - Opens one PDF in the terminal: page navigation, zoom, fit page, fit width,
