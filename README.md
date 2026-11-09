@@ -5,9 +5,11 @@ with Poppler and Cairo, keeps the rendered page in memory while you scroll,
 and sends retained-image scroll operations to Kilix Kitty instead of encoding
 the whole viewport again.
 
-Installable on demand from the Kilix content catalog as `kilix-pdf`
-(`kilix install kilix-pdf`). `kilix pdf-view PDF` installs it on first use and
-opens the file in the current pane; the catalog pins the exact commit.
+On Plebian-OS, `pleb install` builds it at first boot
+(`kilix pdf-view --install-only`) from the commit pinned in the Kilix content
+catalog as `kilix-pdf`. Elsewhere, `kilix install kilix-pdf` installs it, and
+`kilix pdf-view PDF` installs it on first use and opens the file in the current
+pane.
 
 The executable name is `kilix-pdf-viewer`; `kilix-pdf` remains the separate
 PDF-to-Markdown converter. The launcher tries the native terminal viewer first
@@ -127,8 +129,8 @@ kilix-pdf is one of the repositories behind
 install whose desktop is [Kilix](https://github.com/itsmygithubacct/kilix#readme)
 running the [Kilix 95](https://github.com/itsmygithubacct/kilix-95#readme)
 desktop through [Pleb](https://github.com/itsmygithubacct/pleb#readme).
-It is installed on demand from the Kilix content catalog, not shipped in the
-installer image. The map of every repository and how it ships is on the
+`pleb install` builds it at first boot from the commit pinned in the Kilix
+content catalog; it is not carried in the installer image. The map of every repository and how it ships is on the
 [components page](https://github.com/itsmygithubacct/plebian-os/blob/main/docs/components.md).
 
 ## License
